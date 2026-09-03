@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Lavagnetta Watermark</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:620px;margin:auto;padding:18px 15px 40px}.sub,.note{color:#a1a1a6;font-size:13px;line-height:1.35}.card{background:#1d1d1f;border:1px solid #38383a;border-radius:18px;padding:15px;margin:12px 0}
+h1{font-size:24px;margin:0 0 4px}label{display:block;color:#a1a1a6;font-size:11px;text-transform:uppercase;margin-bottom:6px}
+input{width:100%;padding:11px;border-radius:11px;border:1px solid #48484a;background:#2c2c2e;color:white;font-size:19px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}button{width:100%;border:0;border-radius:12px;padding:13px 10px;background:#2c2c2e;color:white;font-size:17px;font-weight:700}button.active{background:#0a84ff;box-shadow:0 0 0 3px rgba(10,132,255,.28)}button.primary{background:#0a84ff;font-size:18px}.hidden{display:none}
+.preview{position:relative;margin-top:9px;overflow:hidden;border-radius:14px;background:#000;min-height:220px;display:flex;align-items:center;justify-content:center}
+.preview img{width:100%;display:block}.empty{padding:60px 20px;text-align:center;color:#777}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#2c2c2e;color:#ddd;font-size:13px;margin-top:8px}
+#cameraView{width:100%;background:#000}.videoWrap{position:relative}.videoWrap video{width:100%;display:block}.overlay{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.68);padding:10px 12px;border-radius:10px;font-weight:700}.cameraBtns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+</style>
+</head>
+<body>
+<main>
+<h1>📷 Lavagnetta Watermark</h1>
+<div class="sub">Imposta TR + sezione, inquadra, scatta e ottieni subito la foto con watermark.</div>
+
+<div class="card">
+<label>Cantiere</label><input id="cantiere" value="MN.C930, ARD26">
+<div style="height:9px"></div><div class="row">
+<div><label>Lotto</label><input id="lotto" value="LOTTO B"></div>
+<div><label>Data</label><input id="data" readonly></div>
+</div>
+</div>
+
+<div class="card">
+<label>Trincea</label><input id="trincea" value="TR 13">
+<div style="height:10px"></div><label>Sezione</label>
+<div class="row">
+<button data-sec="NORD">NORD</button><button data-sec="SUD">SUD</button>
+<button data-sec="EST">EST</button><button data-sec="OVEST">OVEST</button>
+</div>
+<div id="selected" class="badge"></div>
+</div>
+
+<div class="card">
+<label>Prossima foto</label>
+<div style="text-align:center;font-size:30px;font-weight:800" id="fotoView">F1</div>
+<div class="row" style="margin-top:8px"><button id="minus">−</button><button id="plus">＋</button></div>
+</div>
+
+<div class="card">
+<button class="primary" id="start">📷 INQUADRA E SCATTA</button>
+<div id="cameraPanel" class="hidden" style="margin-top:10px">
+<div class="videoWrap"><video id="video" autoplay playsinline></video><div class="overlay" id="liveOverlay"></div></div>
+<div class="cameraBtns"><button id="capture">● SCATTA</button><button id="closeCamera">CHIUDI</button></div>
+</div>
+<input id="fallback" class="hidden" type="file" accept="image/*">
+<div id="status" class="note" style="margin-top:9px">La fotocamera richiede che questa app sia aperta da un indirizzo HTTPS e che tu conceda il permesso.</div>
+</div>
+
+<div class="card">
+<label>Ultimo risultato</label>
+<div class="preview" id="preview"><div class="empty">Qui apparirà la foto con watermark.</div></div>
+<button id="save" class="primary hidden" style="margin-top:10px">⬇︎ SALVA FOTO</button>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let section="EST", photo=1, stream=null, resultBlob=null;
+function today(){const d=new Date();return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear()}
+$("data").value=today();
+const s=JSON.parse(localStorage.getItem("lw")||"null");
+if(s){$("cantiere").value=s.c||$("cantiere").value;$("lotto").value=s.l||$("lotto").value;$("trincea").value=s.t||$("trincea").value;section=s.s||section;photo=s.f??photo}
+function saveState(){localStorage.setItem("lw",JSON.stringify({c:$("cantiere").value,l:$("lotto").value,t:$("trincea").value,s:section,f:photo}))}
+function render(){
+$("selected").textContent="✓ "+section;$("fotoView").textContent="F"+photo;
+document.querySelectorAll("[data-sec]").forEach(b=>b.classList.toggle("active",b.dataset.sec===section));
+$("liveOverlay").textContent=$("trincea").value+" · S "+section+" · F"+photo+" · "+$("data").value;
+saveState()
+}
+document.querySelectorAll("input").forEach(x=>x.addEventListener("input",render));
+document.querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{section=b.dataset.sec;render()});
+$("plus").onclick=()=>{photo++;render()};$("minus").onclick=()=>{photo=Math.max(1,photo-1);render()};
+async function openCamera(){
+  $("status").textContent="Richiesta accesso alla fotocamera…";
+  if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Fotocamera non disponibile in questo contesto. Usa l'app da HTTPS.";return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    $("video").srcObject=stream;$("cameraPanel").classList.remove("hidden");$("start").classList.add("hidden");$("status").textContent="Fotocamera attiva.";
+  }catch(e){$("status").textContent="Accesso fotocamera non riuscito: "+e.name+". Controlla i permessi del browser."}
+}
+function closeCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("video").srcObject=null;$("cameraPanel").classList.add("hidden");$("start").classList.remove("hidden")}
+$("start").onclick=openCamera;$("closeCamera").onclick=closeCamera;
+$("capture").onclick=()=>{
+ const v=$("video"), c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+ c.toBlob(b=>applyWatermark(b),"image/jpeg",.94);closeCamera();
+}
+$("fallback").onchange=e=>{if(e.target.files?.[0])applyWatermark(e.target.files[0])};
+async function applyWatermark(file){
+ const url=URL.createObjectURL(file),img=new Image();
+ img.onload=()=>{
+  const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext("2d");
+  x.drawImage(img,0,0);
+  const scale=Math.max(1,img.naturalWidth/1200), pad=22*scale, h=175*scale;
+  x.fillStyle="rgba(0,0,0,.68)";x.fillRect(0,img.naturalHeight-h,img.naturalWidth,h);
+  x.fillStyle="#fff";x.textBaseline="middle";x.font=`700 ${27*scale}px -apple-system,Arial`;
+  x.fillText($("cantiere").value,pad,img.naturalHeight-h+31*scale);
+  x.fillText($("lotto").value,pad,img.naturalHeight-h+66*scale);
+  x.font=`800 ${31*scale}px -apple-system,Arial`;
+  x.fillText($("trincea").value+"   S "+section,pad,img.naturalHeight-h+109*scale);
+  x.font=`700 ${24*scale}px -apple-system,Arial`;
+  x.fillText("F"+photo+"   "+$("data").value,pad,img.naturalHeight-h+148*scale);
+  c.toBlob(b=>{resultBlob=b;$("preview").innerHTML="";const im=document.createElement("img");im.src=URL.createObjectURL(b);$("preview").appendChild(im);$("save").classList.remove("hidden");$("status").textContent="✓ Watermark applicato a F"+photo;photo++;render()},"image/jpeg",.94);
+  URL.revokeObjectURL(url)
+ };img.src=url
+}
+$("save").onclick=()=>{if(!resultBlob)return;const a=document.createElement("a");a.href=URL.createObjectURL(resultBlob);a.download="F"+(photo-1)+"_"+$("trincea").value.replace(/\\s+/g,"_")+".jpg";a.click()};
+render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body></html>
