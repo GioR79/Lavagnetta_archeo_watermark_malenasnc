@@ -1,6 +1,8 @@
-const CACHE = "lavagnetta-v2";
+const CACHE = "lavagnetta-v3";
 
-self.addEventListener("install", e =>
+self.addEventListener("install", e => {
+  self.skipWaiting();
+
   e.waitUntil(
     caches.open(CACHE).then(c =>
       c.addAll([
@@ -9,8 +11,20 @@ self.addEventListener("install", e =>
         "./manifest.webmanifest"
       ])
     )
-  )
-);
+  );
+});
+
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE)
+          .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
 
 self.addEventListener("fetch", e => {
   if (e.request.mode === "navigate") {
@@ -18,7 +32,9 @@ self.addEventListener("fetch", e => {
       fetch(e.request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put("./index.html", copy));
+          caches.open(CACHE).then(cache =>
+            cache.put("./index.html", copy)
+          );
           return response;
         })
         .catch(() => caches.match("./index.html"))
