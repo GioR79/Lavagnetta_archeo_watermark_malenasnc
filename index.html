@@ -180,9 +180,12 @@ async function openCamera(){
    return;
  }
  try{
-   stream=await navigator.mediaDevices.getUserMedia({
+stream=await navigator.mediaDevices.getUserMedia({
   video:{
-    facingMode:{ideal:"environment"}
+    facingMode:{ideal:"environment"},
+    width:{ideal:3840},
+    height:{ideal:2880},
+    aspectRatio:{ideal:4/3}
   },
   audio:false
 });
