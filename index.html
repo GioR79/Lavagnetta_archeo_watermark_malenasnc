@@ -215,7 +215,7 @@ $("capture").onclick=()=>{
  const v=$("video"),c=document.createElement("canvas");
  c.width=v.videoWidth;c.height=v.videoHeight;
  c.getContext("2d").drawImage(v,0,0);
- c.toBlob(b=>applyWatermark(b),"image/jpeg",.94);
+c.toBlob(b=>applyWatermark(b),"image/png");
  closeCamera();
 };
 
@@ -277,7 +277,7 @@ async function applyWatermark(file){
        $("status").textContent="✓ Watermark applicato a F"+photo;
        photo++;
        render();
-     },"image/jpeg",.94);
+     },"image/jpeg",.98);
    };
    logoImg.src=LOGO;
  };
