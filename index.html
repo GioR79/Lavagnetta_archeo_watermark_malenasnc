@@ -190,7 +190,8 @@ videoTrack=stream.getVideoTracks()[0];
    $("video").srcObject=stream;
    $("cameraPanel").classList.remove("hidden");
    $("start").classList.add("hidden");
-   $("status").textContent="Fotocamera attiva.";
+const settings=videoTrack.getSettings();
+$("status").textContent="Fotocamera attiva — "+settings.width+" × "+settings.height;
  }catch(e){
    $("status").textContent="Accesso fotocamera non riuscito: "+e.name+". Controlla i permessi.";
  }
