@@ -73,6 +73,11 @@ button.primary{background:#0a84ff;font-size:18px}
 <button class="primary" id="start">📷 INQUADRA E SCATTA</button>
 <div id="cameraPanel" class="hidden" style="margin-top:10px">
 <div class="videoWrap"><video id="video" autoplay playsinline></video><div class="overlay" id="liveOverlay"></div></div>
+<div id="zoomControls" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px">
+<button data-zoom="1">1×</button>
+<button data-zoom="2">2×</button>
+<button data-zoom="3">3×</button>
+</div> 
 <div class="cameraBtns"><button id="capture">● SCATTA</button><button id="closeCamera">CHIUDI</button></div>
 </div>
 <div id="status" class="note" style="margin-top:9px">La fotocamera richiede HTTPS e il permesso del browser.</div>
@@ -137,7 +142,37 @@ $("photoInput").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDe
 document.querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{section=b.dataset.sec;render()});
 $("plus").onclick=()=>{photo++;render()};
 $("minus").onclick=()=>{photo=Math.max(1,photo-1);render()};
+let videoTrack=null;
 
+async function setZoom(value){
+  if(!videoTrack)return;
+
+  const capabilities=videoTrack.getCapabilities?.();
+
+  if(!capabilities?.zoom){
+    $("status").textContent="Zoom non disponibile su questa fotocamera.";
+    return;
+  }
+
+  const min=capabilities.zoom.min;
+  const max=capabilities.zoom.max;
+  const step=capabilities.zoom.step||0.1;
+
+  const zoom=Math.min(max,Math.max(min,value));
+
+  try{
+    await videoTrack.applyConstraints({
+      advanced:[{zoom:Math.round(zoom/step)*step}]
+    });
+    $("status").textContent="Zoom "+zoom.toFixed(1)+"×";
+  }catch(e){
+    $("status").textContent="Zoom non disponibile.";
+  }
+}
+
+document.querySelectorAll("[data-zoom]").forEach(b=>{
+  b.onclick=()=>setZoom(parseFloat(b.dataset.zoom));
+});
 async function openCamera(){
  $("status").textContent="Richiesta accesso alla fotocamera…";
  if(!navigator.mediaDevices?.getUserMedia){
@@ -145,7 +180,13 @@ async function openCamera(){
    return;
  }
  try{
-   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+   stream=await navigator.mediaDevices.getUserMedia({
+  video:{
+    facingMode:{ideal:"environment"}
+  },
+  audio:false
+});
+videoTrack=stream.getVideoTracks()[0];
    $("video").srcObject=stream;
    $("cameraPanel").classList.remove("hidden");
    $("start").classList.add("hidden");
@@ -157,6 +198,7 @@ async function openCamera(){
 
 function closeCamera(){
  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ videoTrack=null;
  $("video").srcObject=null;
  $("cameraPanel").classList.add("hidden");
  $("start").classList.remove("hidden");
