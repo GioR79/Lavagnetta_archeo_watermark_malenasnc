@@ -328,7 +328,7 @@ $("save").onclick=async()=>{
  const file=new File([resultBlob],filename,{type:"image/jpeg"});
  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
    try{
-     await navigator.share({files:[file],title:filename});
+     await navigator.share({files:[file]});
      $("status").textContent="Condivisione completata. Su iPhone scegli “Salva immagine” per archiviarla in Foto.";
      return;
    }catch(e){
