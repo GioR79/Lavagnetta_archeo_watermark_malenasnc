@@ -324,7 +324,7 @@ function safeFilenamePart(value){
 $("save").onclick=async()=>{
  if(!resultBlob)return;
  const n=photo-1,site=safeFilenamePart($("cantiere").value)||"CANTIERE";
- const filename=site+"_F"+n+".jpg";
+ const filename="F_"+String(n).padStart(3,"0")+"_"+site+".jpg";
  const file=new File([resultBlob],filename,{type:"image/jpeg"});
  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
    try{

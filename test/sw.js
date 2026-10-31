@@ -1,4 +1,4 @@
-const CACHE = "lavagnetta-v4";
+const CACHE = "lavagnetta-v5";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
