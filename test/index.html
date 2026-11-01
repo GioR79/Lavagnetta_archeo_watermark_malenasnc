@@ -39,22 +39,22 @@ button.primary{background:#0a84ff;font-size:18px}
 <body>
 <main>
 <h1>📷 Lavagnetta Watermark</h1>
-<div class="sub">Imposta TR + sezione, inquadra, scatta e ottieni subito la foto con watermark.</div>
+<div class="sub">Imposta area, TR / US e sezione, inquadra, scatta e ottieni subito la foto con watermark.</div>
 
 <div class="card">
 <label>Cantiere</label><input id="cantiere" value="MN.C930, ARD26">
 <div style="height:9px"></div><div class="row">
-<div><label>Lotto</label><input id="lotto" value="LOTTO B"></div>
+<div><label>Lotto / Area</label><input id="lotto" value="LOTTO B"></div>
 <div><label>Data</label><input id="data" readonly></div>
 </div>
 </div>
 
 <div class="card">
-<label>Trincea</label><input id="trincea" value="TR 13">
-<div style="height:10px"></div><label>Sezione</label>
+<label>Trincea / US</label><input id="trincea" value="TR 13">
+<div style="height:10px"></div><label>Sezione / US</label>
 <div class="row">
 <button data-sec="NORD">NORD</button><button data-sec="SUD">SUD</button>
-<button data-sec="EST">EST</button><button data-sec="OVEST">OVEST</button><button data-sec="GENERALE">GENERALE</button>
+<button data-sec="EST">EST</button><button data-sec="OVEST">OVEST</button><button data-sec="GENERALE">GENERALE</button><button data-sec="US">US</button>
 </div>
 <div id="selected" class="badge"></div>
 </div>
@@ -123,7 +123,7 @@ function render(){
  $("fotoView").textContent="F"+photo;
  if(document.activeElement!==$("photoInput")) $("photoInput").value=photo;
  document.querySelectorAll("[data-sec]").forEach(b=>b.classList.toggle("active",b.dataset.sec===section));
- $("liveOverlay").textContent=$("trincea").value+" · S "+section+" · F"+photo+" · "+$("data").value;
+ $("liveOverlay").textContent=$("trincea").value+" · "+(section==="US"?"US":"S "+section)+" · F"+photo+" · "+$("data").value;
  saveState();
 }
 
@@ -275,7 +275,7 @@ async function applyWatermark(file){
    const blocks=[
      {text:$("cantiere").value,size:Math.max(12,Math.round(box*.105)),weight:700},
      {text:$("lotto").value,size:Math.max(11,Math.round(box*.095)),weight:700},
-     {text:$("trincea").value+" S "+section,size:Math.max(12,Math.round(box*.115)),weight:800},
+     {text:$("trincea").value+" "+(section==="US"?"US":"S "+section),size:Math.max(12,Math.round(box*.115)),weight:800},
      {text:"F"+photo+"  "+$("data").value,size:Math.max(10,Math.round(box*.085)),weight:700}
    ];
    let y=top+pad;const bottom=top+box-pad;
