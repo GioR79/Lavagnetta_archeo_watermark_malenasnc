@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Lavagnetta Watermark</title>
 <style>
 *{box-sizing:border-box}
@@ -38,22 +39,22 @@ button.primary{background:#0a84ff;font-size:18px}
 <body>
 <main>
 <h1>📷 Lavagnetta Watermark</h1>
-<div class="sub">Imposta TR + sezione, inquadra, scatta e ottieni subito la foto con watermark.</div>
+<div class="sub">Imposta area, TR / US e sezione, inquadra, scatta e ottieni subito la foto con watermark.</div>
 
 <div class="card">
 <label>Cantiere</label><input id="cantiere" value="MN.C930, ARD26">
 <div style="height:9px"></div><div class="row">
-<div><label>Lotto</label><input id="lotto" value="LOTTO B"></div>
+<div><label>Lotto / Area</label><input id="lotto" value="LOTTO B"></div>
 <div><label>Data</label><input id="data" readonly></div>
 </div>
 </div>
 
 <div class="card">
-<label>Trincea</label><input id="trincea" value="TR 13">
-<div style="height:10px"></div><label>Sezione</label>
+<label>Trincea / US</label><input id="trincea" value="TR 13">
+<div style="height:10px"></div><label>Sezione / US</label>
 <div class="row">
 <button data-sec="NORD">NORD</button><button data-sec="SUD">SUD</button>
-<button data-sec="EST">EST</button><button data-sec="OVEST">OVEST</button><button data-sec="GENERALE">GENERALE</button>
+<button data-sec="EST">EST</button><button data-sec="OVEST">OVEST</button><button data-sec="GENERALE">GENERALE</button><button data-sec="US">US</button>
 </div>
 <div id="selected" class="badge"></div>
 </div>
@@ -73,10 +74,11 @@ button.primary{background:#0a84ff;font-size:18px}
 <button class="primary" id="start">📷 INQUADRA E SCATTA</button>
 <div id="cameraPanel" class="hidden" style="margin-top:10px">
 <div class="videoWrap"><video id="video" autoplay playsinline></video><div class="overlay" id="liveOverlay"></div></div>
-<div id="zoomControls" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px">
+<div id="zoomControls" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:9px">
 <button data-zoom="1">1×</button>
 <button data-zoom="2">2×</button>
 <button data-zoom="3">3×</button>
+<button id="pano" type="button">PANO</button>
 </div> 
 <div class="cameraBtns"><button id="capture">● SCATTA</button><button id="closeCamera">CHIUDI</button></div>
 </div>
@@ -86,7 +88,7 @@ button.primary{background:#0a84ff;font-size:18px}
 <div class="card">
 <label>Ultimo risultato</label>
 <div class="preview" id="preview"><div class="empty">Qui apparirà la foto con watermark.</div></div>
-<button id="save" class="primary hidden" style="margin-top:10px">⬇︎ SALVA FOTO</button>
+<button id="save" class="primary hidden" style="margin-top:10px">↗︎ CONDIVIDI / SALVA IN FOTO</button>
 </div>
 </main>
 
@@ -121,7 +123,7 @@ function render(){
  $("fotoView").textContent="F"+photo;
  if(document.activeElement!==$("photoInput")) $("photoInput").value=photo;
  document.querySelectorAll("[data-sec]").forEach(b=>b.classList.toggle("active",b.dataset.sec===section));
- $("liveOverlay").textContent=$("trincea").value+" · S "+section+" · F"+photo+" · "+$("data").value;
+ $("liveOverlay").textContent=$("trincea").value+" · "+(section==="US"?"US":"S "+section)+" · F"+photo+" · "+$("data").value;
  saveState();
 }
 
@@ -173,6 +175,20 @@ async function setZoom(value){
 document.querySelectorAll("[data-zoom]").forEach(b=>{
   b.onclick=()=>setZoom(parseFloat(b.dataset.zoom));
 });
+
+// PANO: usa il minimo zoom disponibile. Safari/iOS non espone in modo
+// uniforme la selezione diretta della lente ultra-grandangolare.
+$("pano").onclick=async()=>{
+  if(!videoTrack)return;
+  const capabilities=videoTrack.getCapabilities?.();
+  if(capabilities?.zoom){
+    await setZoom(capabilities.zoom.min);
+    $("status").textContent += " · PANO: minimo zoom disponibile; la lente ultra-wide dipende dal dispositivo/browser.";
+  }else{
+    $("status").textContent="PANO: controllo zoom non disponibile. Inquadra manualmente più largo.";
+  }
+};
+
 async function openCamera(){
  $("status").textContent="Richiesta accesso alla fotocamera…";
  if(!navigator.mediaDevices?.getUserMedia){
@@ -180,12 +196,9 @@ async function openCamera(){
    return;
  }
  try{
-stream=await navigator.mediaDevices.getUserMedia({
+   stream=await navigator.mediaDevices.getUserMedia({
   video:{
-    facingMode:{ideal:"environment"},
-    width:{ideal:3840},
-    height:{ideal:2880},
-    aspectRatio:{ideal:4/3}
+    facingMode:{ideal:"environment"}
   },
   audio:false
 });
@@ -193,8 +206,7 @@ videoTrack=stream.getVideoTracks()[0];
    $("video").srcObject=stream;
    $("cameraPanel").classList.remove("hidden");
    $("start").classList.add("hidden");
-const settings=videoTrack.getSettings();
-$("status").textContent="Fotocamera attiva — "+settings.width+" × "+settings.height;
+   $("status").textContent="Fotocamera attiva.";
  }catch(e){
    $("status").textContent="Accesso fotocamera non riuscito: "+e.name+". Controlla i permessi.";
  }
@@ -215,7 +227,7 @@ $("capture").onclick=()=>{
  const v=$("video"),c=document.createElement("canvas");
  c.width=v.videoWidth;c.height=v.videoHeight;
  c.getContext("2d").drawImage(v,0,0);
-c.toBlob(b=>applyWatermark(b),"image/png");
+ c.toBlob(b=>applyWatermark(b),"image/jpeg",.94);
  closeCamera();
 };
 
@@ -226,73 +238,111 @@ async function applyWatermark(file){
    c.width=img.naturalWidth;c.height=img.naturalHeight;
    const x=c.getContext("2d");
    x.drawImage(img,0,0);
-
    const w=img.naturalWidth,h=img.naturalHeight;
    const box=Math.round(Math.min(w,h)*0.25);
    const margin=Math.round(Math.min(w,h)*0.025);
    const radius=Math.round(box*0.08);
-   const top=margin,left=margin;
-
+   const left=margin,top=margin;
    x.save();
    x.fillStyle="rgba(0,0,0,.68)";
-   x.beginPath();
-   x.roundRect(left,top,box,box,radius);
-   x.fill();
+   x.beginPath();x.roundRect(left,top,box,box,radius);x.fill();
+   const pad=Math.round(box*.075),maxWidth=box-pad*2;
+   x.fillStyle="#fff";x.textBaseline="top";
 
-   const pad=Math.round(box*.075);
-   const fs1=Math.max(12,Math.round(box*.105));
-   const fs2=Math.max(11,Math.round(box*.095));
-   const fs3=Math.max(12,Math.round(box*.115));
-   const fs4=Math.max(10,Math.round(box*.085));
-   x.fillStyle="#fff";
-   x.textBaseline="top";
-   x.font=`700 ${fs1}px -apple-system,Arial`;
-   x.fillText($("cantiere").value,left+pad,top+pad);
-   x.font=`700 ${fs2}px -apple-system,Arial`;
-   x.fillText($("lotto").value,left+pad,top+pad+Math.round(box*.22));
-   x.font=`800 ${fs3}px -apple-system,Arial`;
-   x.fillText($("trincea").value+" S "+section,left+pad,top+pad+Math.round(box*.43));
-   x.font=`700 ${fs4}px -apple-system,Arial`;
-   x.fillText("F"+photo+"  "+$("data").value,left+pad,top+pad+Math.round(box*.66));
+   function wrappedLines(text,fontSize,weight,maxLines=2){
+     let size=fontSize,lines=[];
+     while(size>=Math.max(8,Math.round(fontSize*.62))){
+       x.font=`${weight} ${size}px -apple-system,Arial`;
+       lines=[];let line="";
+       String(text||"").trim().split(/\s+/).filter(Boolean).forEach(word=>{
+         const candidate=line?line+" "+word:word;
+         if(line && x.measureText(candidate).width>maxWidth){lines.push(line);line=word;}
+         else line=candidate;
+       });
+       if(line)lines.push(line);
+       if(lines.length<=maxLines)break;
+       size-=1;
+     }
+     if(lines.length>maxLines){
+       lines=lines.slice(0,maxLines);
+       let last=lines[maxLines-1];
+       while(last.length && x.measureText(last+"…").width>maxWidth)last=last.slice(0,-1);
+       lines[maxLines-1]=last+"…";
+     }
+     return {lines,size};
+   }
+
+   const blocks=[
+     {text:$("cantiere").value,size:Math.max(12,Math.round(box*.105)),weight:700},
+     {text:$("lotto").value,size:Math.max(11,Math.round(box*.095)),weight:700},
+     {text:$("trincea").value+" "+(section==="US"?"US":"S "+section),size:Math.max(12,Math.round(box*.115)),weight:800},
+     {text:"F"+photo+"  "+$("data").value,size:Math.max(10,Math.round(box*.085)),weight:700}
+   ];
+   let y=top+pad;const bottom=top+box-pad;
+   blocks.forEach((block,index)=>{
+     const fitted=wrappedLines(block.text,block.size,block.weight,index===3?1:2);
+     x.font=`${block.weight} ${fitted.size}px -apple-system,Arial`;
+     const lineHeight=Math.round(fitted.size*1.16);
+     fitted.lines.forEach(line=>{
+       if(y+lineHeight<=bottom){x.fillText(line,left+pad,y,maxWidth);y+=lineHeight;}
+     });
+     y+=Math.max(2,Math.round(box*.018));
+   });
    x.restore();
 
    const logoImg=new Image();
    logoImg.onload=()=>{
      const logoW=Math.round(Math.min(w,h)*.105);
      const logoH=Math.round(logoW*logoImg.naturalHeight/logoImg.naturalWidth);
-     const lx=w-margin-logoW, ly=margin;
-     x.save();
-     x.globalAlpha=.65;
-     x.drawImage(logoImg,lx,ly,logoW,logoH);
-     x.restore();
-
+     const lx=w-margin-logoW,ly=margin;
+     x.save();x.globalAlpha=.65;x.drawImage(logoImg,lx,ly,logoW,logoH);x.restore();
      c.toBlob(b=>{
        URL.revokeObjectURL(url);
+       if(!b){$("status").textContent="Errore nella preparazione della foto.";return;}
        resultBlob=b;
        $("preview").innerHTML="";
-       const im=document.createElement("img");
-       im.src=URL.createObjectURL(b);
+       const im=document.createElement("img");im.src=URL.createObjectURL(b);
        $("preview").appendChild(im);
        $("save").classList.remove("hidden");
        $("status").textContent="✓ Watermark applicato a F"+photo;
-       photo++;
-       render();
-     },"image/jpeg",.98);
+       photo++;render();
+     },"image/jpeg",.94);
    };
+   logoImg.onerror=()=>{URL.revokeObjectURL(url);$("status").textContent="Impossibile caricare il logo: foto non completata.";};
    logoImg.src=LOGO;
  };
+ img.onerror=()=>{URL.revokeObjectURL(url);$("status").textContent="Impossibile leggere la fotografia.";};
  img.src=url;
 }
 
-$("save").onclick=()=>{
- if(!resultBlob)return;
- const a=document.createElement("a");
- const n=photo-1;
- a.href=URL.createObjectURL(resultBlob);
- a.download="F"+n+"_"+$("trincea").value.trim().replace(/\s+/g,"_")+".jpg";
- a.click();
-};
+function safeFilenamePart(value){
+ return String(value||"").trim().replace(/[,\s]+/g,"_")
+   .replace(/[^\p{L}\p{N}._-]+/gu,"").replace(/_+/g,"_")
+   .replace(/^[_\.]+|[_\.]+$/g,"");
+}
 
+$("save").onclick=async()=>{
+ if(!resultBlob)return;
+ const n=photo-1,site=safeFilenamePart($("cantiere").value)||"CANTIERE";
+ const filename="F_"+String(n).padStart(3,"0")+"_"+site+".jpg";
+ const file=new File([resultBlob],filename,{type:"image/jpeg"});
+ if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+   try{
+     await navigator.share({files:[file]});
+     $("status").textContent="Condivisione completata. Su iPhone scegli “Salva immagine” per archiviarla in Foto.";
+     return;
+   }catch(e){
+     if(e.name==="AbortError"){
+       $("status").textContent="Condivisione annullata. La foto resta disponibile nell’anteprima.";
+       return;
+     }
+   }
+ }
+ const objectUrl=URL.createObjectURL(resultBlob),a=document.createElement("a");
+ a.href=objectUrl;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(objectUrl),1500);
+ $("status").textContent="Download avviato: "+filename;
+};
 render();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>

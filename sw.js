@@ -1,4 +1,4 @@
-const CACHE = "lavagnetta-v3";
+const CACHE = "lavagnetta-v7";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -8,7 +8,10 @@ self.addEventListener("install", e => {
       c.addAll([
         "./",
         "./index.html",
-        "./manifest.webmanifest"
+        "./manifest.webmanifest",
+        "./malena-icon-192.png",
+        "./malena-icon-512.png",
+        "./apple-touch-icon.png"
       ])
     )
   );
