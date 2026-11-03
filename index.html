@@ -123,8 +123,7 @@ function render(){
  $("fotoView").textContent="F"+photo;
  if(document.activeElement!==$("photoInput")) $("photoInput").value=photo;
  document.querySelectorAll("[data-sec]").forEach(b=>b.classList.toggle("active",b.dataset.sec===section));
- $("liveOverlay").textContent=$("trincea").value+" · "+(section==="US"?"US":"S "+section)+" · F"+photo+" · "+$("data").value;
- saveState();
+ $("liveOverlay").textContent=$("trincea").value+(section==="US"?"":" · S "+section)+" · F"+photo+" · "+$("data").value;
 }
 
 function applyPhotoInput(){
@@ -275,7 +274,7 @@ async function applyWatermark(file){
    const blocks=[
      {text:$("cantiere").value,size:Math.max(12,Math.round(box*.105)),weight:700},
      {text:$("lotto").value,size:Math.max(11,Math.round(box*.095)),weight:700},
-     {text:$("trincea").value+" "+(section==="US"?"US":"S "+section),size:Math.max(12,Math.round(box*.115)),weight:800},
+     {text:$("trincea").value+(section==="US"?"":" S "+section),size:Math.max(12,Math.round(box*.115)),weight:800},
      {text:"F"+photo+"  "+$("data").value,size:Math.max(10,Math.round(box*.085)),weight:700}
    ];
    let y=top+pad;const bottom=top+box-pad;
