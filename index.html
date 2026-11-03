@@ -197,8 +197,10 @@ async function openCamera(){
  try{
    stream=await navigator.mediaDevices.getUserMedia({
   video:{
-    facingMode:{ideal:"environment"}
-  },
+  facingMode:{ideal:"environment"},
+  width:{ideal:1440},
+  height:{ideal:1920}
+},
   audio:false
 });
 videoTrack=stream.getVideoTracks()[0];
@@ -226,7 +228,7 @@ $("capture").onclick=()=>{
  const v=$("video"),c=document.createElement("canvas");
  c.width=v.videoWidth;c.height=v.videoHeight;
  c.getContext("2d").drawImage(v,0,0);
- c.toBlob(b=>applyWatermark(b),"image/jpeg",.94);
+ c.toBlob(b=>applyWatermark(b),"image/png");
  closeCamera();
 };
 
@@ -305,7 +307,7 @@ async function applyWatermark(file){
        $("save").classList.remove("hidden");
        $("status").textContent="✓ Watermark applicato a F"+photo;
        photo++;render();
-     },"image/jpeg",.94);
+     },"image/jpeg",.96);
    };
    logoImg.onerror=()=>{URL.revokeObjectURL(url);$("status").textContent="Impossibile caricare il logo: foto non completata.";};
    logoImg.src=LOGO;
