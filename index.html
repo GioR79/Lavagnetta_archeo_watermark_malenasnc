@@ -197,15 +197,23 @@ async function openCamera(){
  try{
    stream=await navigator.mediaDevices.getUserMedia({
   video:{
-  facingMode:{ideal:"environment"}
-},
+    facingMode:{ideal:"environment"},
+    // Chiede al browser il flusso con la risoluzione più alta disponibile.
+    // "ideal" evita di bloccare la fotocamera se il dispositivo non supporta il 4K.
+    width:{ideal:3840},
+    height:{ideal:2160},
+    frameRate:{ideal:30}
+  },
   audio:false
 });
 videoTrack=stream.getVideoTracks()[0];
    $("video").srcObject=stream;
    $("cameraPanel").classList.remove("hidden");
    $("start").classList.add("hidden");
-   $("status").textContent="Fotocamera attiva.";
+   const settings=videoTrack.getSettings?.()||{};
+   const resolution=settings.width&&settings.height
+     ? `${settings.width} × ${settings.height}` : "risoluzione non comunicata";
+   $("status").textContent="Fotocamera attiva · "+resolution;
  }catch(e){
    $("status").textContent="Accesso fotocamera non riuscito: "+e.name+". Controlla i permessi.";
  }
